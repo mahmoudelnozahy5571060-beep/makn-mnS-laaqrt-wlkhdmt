@@ -1,22 +1,25 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Makana unified property and home services platform API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
-    description: Health operations
+  - name: properties
+  - name: requests
+  - name: finishing
+  - name: professionals
+  - name: marketplace
+  - name: dashboard
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,13 +27,411 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /properties:
+    get:
+      operationId: listProperties
+      tags: [properties]
+      summary: List published properties
+      parameters:
+        - $ref: "#/components/parameters/Search"
+        - name: listingType
+          in: query
+          schema: { type: string }
+        - name: propertyType
+          in: query
+          schema: { type: string }
+        - name: governorate
+          in: query
+          schema: { type: string }
+        - name: maxPrice
+          in: query
+          schema: { type: number }
+        - name: featured
+          in: query
+          schema: { type: boolean }
+      responses:
+        "200":
+          description: Properties
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Property" }
+    post:
+      operationId: createProperty
+      tags: [properties]
+      summary: Submit a property for review
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PropertyInput" }
+      responses:
+        "201":
+          description: Submitted property
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Property" }
+  /properties/{id}:
+    get:
+      operationId: getProperty
+      tags: [properties]
+      summary: Get one property
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Property
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Property" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /properties/{id}/favorite:
+    post:
+      operationId: togglePropertyFavorite
+      tags: [properties]
+      summary: Toggle a property in the current user's favorites
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Favorite state
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FavoriteState" }
+  /viewing-requests:
+    post:
+      operationId: createViewingRequest
+      tags: [requests]
+      summary: Request a property viewing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ViewingRequestInput" }
+      responses:
+        "201":
+          description: Viewing request
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ViewingRequest" }
+  /finishing-services:
+    get:
+      operationId: listFinishingServices
+      tags: [finishing]
+      summary: List finishing and smart home services
+      responses:
+        "200":
+          description: Services
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/FinishingService" }
+  /finishing-quotes:
+    post:
+      operationId: calculateFinishingQuote
+      tags: [finishing]
+      summary: Calculate estimated labor quote
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/FinishingQuoteInput" }
+      responses:
+        "200":
+          description: Estimated quote
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FinishingQuote" }
+  /professionals:
+    get:
+      operationId: listProfessionals
+      tags: [professionals]
+      summary: List professional providers
+      parameters:
+        - $ref: "#/components/parameters/Search"
+        - name: category
+          in: query
+          schema: { type: string }
+        - name: governorate
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: Professionals
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Professional" }
+  /appointments:
+    post:
+      operationId: createAppointment
+      tags: [professionals]
+      summary: Request a professional appointment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AppointmentInput" }
+      responses:
+        "201":
+          description: Appointment
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Appointment" }
+  /products:
+    get:
+      operationId: listProducts
+      tags: [marketplace]
+      summary: List marketplace products
+      parameters:
+        - $ref: "#/components/parameters/Search"
+        - name: category
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: Products
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Product" }
+  /orders:
+    post:
+      operationId: createOrder
+      tags: [marketplace]
+      summary: Create a marketplace order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/OrderInput" }
+      responses:
+        "201":
+          description: Order
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Order" }
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: Get admin dashboard summary
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DashboardSummary" }
 components:
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema: { type: integer }
+    Search:
+      name: search
+      in: query
+      schema: { type: string }
+  responses:
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
   schemas:
     HealthStatus:
       type: object
       properties:
-        status:
-          type: string
-      required:
-        - status
-
+        status: { type: string }
+      required: [status]
+    Error:
+      type: object
+      properties:
+        error: { type: string }
+      required: [error]
+    Property:
+      type: object
+      required: [id, title, propertyType, listingType, price, area, rooms, bathrooms, governorate, district, finish, image, featured, status]
+      properties:
+        id: { type: integer }
+        title: { type: string }
+        propertyType: { type: string }
+        listingType: { type: string }
+        price: { type: number }
+        area: { type: number }
+        rooms: { type: integer }
+        bathrooms: { type: integer }
+        governorate: { type: string }
+        district: { type: string }
+        finish: { type: string }
+        image: { type: string }
+        description: { type: string }
+        featured: { type: boolean }
+        status: { type: string }
+        views: { type: integer }
+        amenities:
+          type: array
+          items: { type: string }
+    PropertyInput:
+      type: object
+      required: [title, propertyType, listingType, price, area, rooms, bathrooms, governorate, district, finish, image]
+      properties:
+        title: { type: string }
+        propertyType: { type: string }
+        listingType: { type: string }
+        price: { type: number }
+        area: { type: number }
+        rooms: { type: integer }
+        bathrooms: { type: integer }
+        governorate: { type: string }
+        district: { type: string }
+        finish: { type: string }
+        image: { type: string }
+        description: { type: string }
+        amenities:
+          type: array
+          items: { type: string }
+    FavoriteState:
+      type: object
+      required: [favorite]
+      properties:
+        favorite: { type: boolean }
+    ViewingRequestInput:
+      type: object
+      required: [propertyId, name, phone, preferredDate, preferredTime]
+      properties:
+        propertyId: { type: integer }
+        name: { type: string }
+        phone: { type: string }
+        preferredDate: { type: string }
+        preferredTime: { type: string }
+        notes: { type: string }
+    ViewingRequest:
+      allOf:
+        - $ref: "#/components/schemas/ViewingRequestInput"
+        - type: object
+          required: [id, status]
+          properties:
+            id: { type: integer }
+            status: { type: string }
+    FinishingService:
+      type: object
+      required: [id, name, category, description, unit, laborPrice, accent]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        category: { type: string }
+        description: { type: string }
+        unit: { type: string }
+        laborPrice: { type: number }
+        accent: { type: string }
+    FinishingQuoteInput:
+      type: object
+      required: [serviceId, area]
+      properties:
+        serviceId: { type: integer }
+        area: { type: number }
+        placeType: { type: string }
+        bathrooms: { type: integer }
+        notes: { type: string }
+    FinishingQuote:
+      type: object
+      required: [serviceId, area, laborPrice, estimatedCost, disclaimer]
+      properties:
+        serviceId: { type: integer }
+        area: { type: number }
+        laborPrice: { type: number }
+        estimatedCost: { type: number }
+        disclaimer: { type: string }
+    Professional:
+      type: object
+      required: [id, name, title, category, specialty, governorate, district, experience, rating, image, available]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        title: { type: string }
+        category: { type: string }
+        specialty: { type: string }
+        governorate: { type: string }
+        district: { type: string }
+        experience: { type: integer }
+        rating: { type: number }
+        image: { type: string }
+        available: { type: boolean }
+        bio: { type: string }
+    AppointmentInput:
+      type: object
+      required: [professionalId, name, phone, date, time]
+      properties:
+        professionalId: { type: integer }
+        name: { type: string }
+        phone: { type: string }
+        date: { type: string }
+        time: { type: string }
+        notes: { type: string }
+    Appointment:
+      allOf:
+        - $ref: "#/components/schemas/AppointmentInput"
+        - type: object
+          required: [id, status]
+          properties:
+            id: { type: integer }
+            status: { type: string }
+    Product:
+      type: object
+      required: [id, name, category, vendor, price, oldPrice, image, stock, badge]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        category: { type: string }
+        vendor: { type: string }
+        price: { type: number }
+        oldPrice: { type: number }
+        image: { type: string }
+        stock: { type: integer }
+        badge: { type: string }
+        description: { type: string }
+    OrderInput:
+      type: object
+      required: [name, phone, address, items]
+      properties:
+        name: { type: string }
+        phone: { type: string }
+        address: { type: string }
+        items:
+          type: array
+          items:
+            type: object
+            required: [productId, quantity]
+            properties:
+              productId: { type: integer }
+              quantity: { type: integer }
+    Order:
+      allOf:
+        - $ref: "#/components/schemas/OrderInput"
+        - type: object
+          required: [id, status, total]
+          properties:
+            id: { type: integer }
+            status: { type: string }
+            total: { type: number }
+    DashboardSummary:
+      type: object
+      required: [users, properties, pendingProperties, viewingRequests, finishingRequests, professionals, products, orders]
+      properties:
+        users: { type: integer }
+        properties: { type: integer }
+        pendingProperties: { type: integer }
+        publishedProperties: { type: integer }
+        viewingRequests: { type: integer }
+        finishingRequests: { type: integer }
+        professionals: { type: integer }
+        products: { type: integer }
+        orders: { type: integer }
+        revenue: { type: number }

@@ -1,6 +1,6 @@
-# [Project name]
+# مَكانا | Makana
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+منصة عربية موحّدة تجمع العقارات، التشطيبات، المنزل الذكي، الخدمات المهنية، والمشتريات في تجربة واحدة.
 
 ## Run & Operate
 
@@ -22,23 +22,36 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/makana` — the deployable Arabic RTL web experience and brand system.
+- `artifacts/api-server/src/routes/makana.ts` — MVP API routes for properties, viewing requests, finishing, professionals, products, orders, and dashboard summaries.
+- `artifacts/api-server/src/lib/makana-data.ts` — seeded MVP domain data used by the API.
+- `lib/api-spec/openapi.yaml` — source of truth for the API contract.
+- `artifacts/makana/src/index.css` — Makana design tokens, typography, and global visual system.
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- The product is one unified platform with modular domain routes, not four separate sites.
+- Public property pages intentionally expose no owner identity; viewing requests go through the platform.
+- New properties start as `Pending Review` and only seeded/approved properties appear in public discovery.
+- Finishing estimates explicitly label labor-only pricing and keep the service catalog admin-driven through the API contract.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+- Arabic RTL discovery homepage with Makana identity and navigation across the four MVP domains.
+- Searchable/filterable properties with details, favorites, viewing request submission, and property submission workflow.
+- Finishing and Smart Home catalog with a labor-only quote calculator.
+- Professional directory with search and appointment request flow.
+- Marketplace browsing with cart and checkout request flow.
+- Customer/admin dashboard summary surface.
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+- The user asked for a memorable platform name and a custom logo; the current brand is “مَكانا | Makana”.
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- API server routes are mounted under `/api`; the frontend uses the generated client rather than hardcoded service ports.
+- Regenerate client/Zod files with `pnpm --filter @workspace/api-spec run codegen` after OpenAPI changes.
 
 ## Pointers
 

@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "مَكانا | Makana"
+description = "منصة عربية موحّدة تجمع العقارات، التشطيبات، المنزل الذكي، الخدمات المهنية، والمشتريات في تجربة واحدة واضحة وموثوقة."
+version = "1.0.0"
+id = "artifacts/makana"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 24507
+
+[services.development]
+run = "pnpm --filter @workspace/makana run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/makana", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/makana/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "24507"
+BASE_PATH = "/"
