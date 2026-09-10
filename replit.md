@@ -1,4 +1,4 @@
-# مَكانا | Makana
+# بوابة | Bawaba
 
 منصة عربية موحّدة تجمع العقارات، التشطيبات، المنزل الذكي، الخدمات المهنية، والمشتريات في تجربة واحدة.
 
@@ -26,7 +26,7 @@
 - `artifacts/api-server/src/routes/makana.ts` — MVP API routes for properties, viewing requests, finishing, professionals, products, orders, and dashboard summaries.
 - `artifacts/api-server/src/lib/makana-data.ts` — seeded MVP domain data used by the API.
 - `lib/api-spec/openapi.yaml` — source of truth for the API contract.
-- `artifacts/makana/src/index.css` — Makana design tokens, typography, and global visual system.
+- `artifacts/makana/src/index.css` — Bawaba design tokens, typography, and global visual system.
 
 ## Architecture decisions
 
@@ -37,7 +37,7 @@
 
 ## Product
 
-- Arabic RTL discovery homepage with Makana identity and navigation across the four MVP domains.
+- Arabic RTL discovery homepage with Bawaba identity and navigation across the four MVP domains.
 - Searchable/filterable properties with details, favorites, viewing request submission, and property submission workflow.
 - Finishing and Smart Home catalog with a labor-only quote calculator.
 - Professional directory with search and appointment request flow.
@@ -46,7 +46,7 @@
 
 ## User preferences
 
-- The user asked for a memorable platform name and a custom logo; the current brand is “مَكانا | Makana”.
+- The user asked for a memorable platform name and a custom logo; the current brand is “بوابة | Bawaba”.
 
 ## Gotchas
 

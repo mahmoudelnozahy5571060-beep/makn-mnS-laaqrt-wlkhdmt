@@ -242,7 +242,7 @@ export const products = [
     image:
       "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=900&q=85",
     stock: 12,
-    badge: "اختيار مَكانا",
+    badge: "اختيار بوابة",
     description: "تنقية متعددة المراحل للاستخدام اليومي في المنزل.",
   },
 ];
