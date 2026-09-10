@@ -1,10 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft, ArrowUpRight, Bath, BedDouble, Bell, Building2, CalendarDays, Check,
   ChevronDown, CircleDollarSign, Clock3, Compass, Heart, Home as HomeIcon, LayoutDashboard,
   MapPin, Menu, Package, Phone, Plus, Ruler, Search, Send, Settings2, ShieldCheck,
-  ShoppingBag, SlidersHorizontal, Sparkles, Star, Store, Tag, UserRound, UsersRound, X, Zap
+  ShoppingBag, SlidersHorizontal, Sparkles, Star, Store, Sun, Moon, Tag, UserRound, UsersRound, X, Zap
 } from 'lucide-react';
 import {
   getGetDashboardSummaryQueryKey, getGetPropertyQueryKey, getHealthCheckQueryKey,
@@ -44,9 +44,50 @@ function BawabaLogo({ footer = false }: { footer?: boolean }) {
   );
 }
 
+function ThemeToggle() {
+  const [darkMode, setDarkMode] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    const stored = window.localStorage.getItem('bawaba-theme');
+    return stored ? stored === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+  });
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', darkMode);
+    window.localStorage.setItem('bawaba-theme', darkMode ? 'dark' : 'light');
+  }, [darkMode]);
+
+  return (
+    <button
+      type="button"
+      data-testid="button-theme-toggle"
+      aria-label={darkMode ? 'التبديل إلى الوضع الفاتح' : 'التبديل إلى الوضع الداكن'}
+      title={darkMode ? 'الوضع الفاتح' : 'الوضع الداكن'}
+      onClick={() => setDarkMode((value) => !value)}
+      className="theme-toggle group"
+    >
+      <span className="theme-toggle-track">
+        <span className="theme-toggle-thumb">{darkMode ? <Moon size={14} /> : <Sun size={14} />}</span>
+      </span>
+      <span className="hidden text-xs font-bold text-muted-foreground sm:inline">{darkMode ? 'ليلي' : 'نهاري'}</span>
+    </button>
+  );
+}
+
 function Shell({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const [location] = useLocation();
+  useEffect(() => {
+    const markImagesForLazyLoading = () => {
+      document.querySelectorAll<HTMLImageElement>('img').forEach((image) => {
+        image.loading = 'lazy';
+        image.decoding = 'async';
+      });
+    };
+    markImagesForLazyLoading();
+    const observer = new MutationObserver(markImagesForLazyLoading);
+    observer.observe(document.body, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, [location]);
   const links = [
     { href: '/', label: 'الرئيسية', icon: Compass },
     { href: '/properties', label: 'اكتشف العقارات', icon: Building2 },
@@ -56,7 +97,11 @@ function Shell({ children }: { children: React.ReactNode }) {
     { href: '/dashboard', label: 'لوحة المتابعة', icon: LayoutDashboard },
   ];
   return (
-    <div dir="rtl" className="min-h-[100dvh] bg-background text-foreground makana-noise">
+    <div dir="rtl" className="relative min-h-[100dvh] overflow-hidden bg-background text-foreground makana-noise">
+      <div className="bawaba-ambient" aria-hidden="true">
+        <span className="bawaba-orb bawaba-orb-one" />
+        <span className="bawaba-orb bawaba-orb-two" />
+      </div>
       <header className="sticky top-0 z-40 border-b border-border/80 bg-background/90 backdrop-blur-xl">
         <div className="mx-auto flex h-[72px] max-w-[1440px] items-center justify-between px-5 lg:px-10">
           <Link href="/" data-testid="link-logo" className="flex items-center gap-3">
@@ -66,6 +111,7 @@ function Shell({ children }: { children: React.ReactNode }) {
             {links.slice(0, 5).map(({ href, label }) => <Link key={href} href={href} data-testid={`link-nav-${href.slice(1) || 'home'}`} className={`rounded-lg px-3 py-2 text-sm font-semibold ${location === href ? 'bg-secondary text-primary' : 'text-muted-foreground hover:bg-secondary hover:text-foreground'}`}>{label}</Link>)}
           </nav>
           <div className="flex items-center gap-2">
+            <ThemeToggle />
             <Link href="/dashboard" data-testid="link-account" className="hidden items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-muted-foreground hover:bg-secondary hover:text-foreground sm:flex"><UserRound size={17} /> حسابي</Link>
             <button type="button" data-testid="button-mobile-menu" aria-label="فتح القائمة" className="button-ghost p-2 lg:hidden" onClick={() => setOpen(!open)}>{open ? <X size={18} /> : <Menu size={18} />}</button>
           </div>
