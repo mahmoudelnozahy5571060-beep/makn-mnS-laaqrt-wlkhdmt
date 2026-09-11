@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
+import { ClerkProvider, SignIn, SignUp, useAuth, useClerk, useUser } from '@clerk/react';
+import { publishableKeyFromHost } from '@clerk/react/internal';
+import { shadcn } from '@clerk/themes';
 import {
   ArrowLeft, ArrowUpRight, Bath, BedDouble, Bell, Building2, CalendarDays, Check,
   ChevronDown, CircleDollarSign, Clock3, Compass, Heart, Home as HomeIcon, LayoutDashboard,
@@ -23,8 +26,61 @@ import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
 const queryClient = new QueryClient();
+const clerkPubKey = publishableKeyFromHost(
+  window.location.hostname,
+  import.meta.env.VITE_CLERK_PUBLISHABLE_KEY,
+);
+const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
+const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
 const money = (value: number) => `${new Intl.NumberFormat('ar-EG').format(value)} ج.م`;
 const number = (value: number) => new Intl.NumberFormat('ar-EG').format(value);
+
+const clerkAppearance = {
+  theme: shadcn,
+  cssLayerName: 'clerk',
+  options: {
+    logoPlacement: 'inside' as const,
+    logoLinkUrl: basePath || '/',
+    logoImageUrl: `${window.location.origin}${basePath}/logo.svg`,
+  },
+  variables: {
+    colorPrimary: '#1f4753',
+    colorForeground: '#1f4753',
+    colorMutedForeground: '#6d7e81',
+    colorDanger: '#b94a48',
+    colorBackground: '#fffdf8',
+    colorInput: '#fffdf8',
+    colorInputForeground: '#1f4753',
+    colorNeutral: '#d8ddd7',
+    fontFamily: 'IBM Plex Sans Arabic',
+    borderRadius: '0.85rem',
+  },
+  elements: {
+    rootBox: 'w-full flex justify-center',
+    cardBox: 'bg-card rounded-3xl w-[440px] max-w-full overflow-hidden border border-border shadow-xl',
+    card: '!shadow-none !border-0 !bg-transparent !rounded-none',
+    footer: '!shadow-none !border-0 !bg-transparent !rounded-none',
+    headerTitle: 'display-font text-primary',
+    headerSubtitle: 'text-muted-foreground',
+    socialButtonsBlockButtonText: 'text-primary',
+    formFieldLabel: 'text-primary',
+    footerActionLink: 'text-primary font-bold',
+    footerActionText: 'text-muted-foreground',
+    dividerText: 'text-muted-foreground',
+    formButtonPrimary: 'bg-primary text-primary-foreground hover:opacity-90',
+    formFieldInput: 'bg-card text-foreground border-border',
+    socialButtonsBlockButton: 'border-border bg-card',
+    logoBox: 'mb-3',
+    logoImage: 'max-h-12',
+    footerAction: 'border-border',
+    dividerLine: 'bg-border',
+    alert: 'border-destructive/30 bg-destructive/10',
+    alertText: 'text-destructive',
+    otpCodeFieldInput: 'border-border bg-card text-foreground',
+    formFieldRow: 'gap-2',
+    main: 'gap-5',
+  },
+};
 
 function BawabaLogo({ footer = false }: { footer?: boolean }) {
   return (
@@ -76,6 +132,7 @@ function ThemeToggle() {
 function Shell({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const [location] = useLocation();
+  const { isSignedIn } = useAuth();
   useEffect(() => {
     const markImagesForLazyLoading = () => {
       document.querySelectorAll<HTMLImageElement>('img').forEach((image) => {
@@ -112,7 +169,7 @@ function Shell({ children }: { children: React.ReactNode }) {
           </nav>
           <div className="flex items-center gap-2">
             <ThemeToggle />
-            <Link href="/dashboard" data-testid="link-account" className="hidden items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-muted-foreground hover:bg-secondary hover:text-foreground sm:flex"><UserRound size={17} /> حسابي</Link>
+             <Link href={isSignedIn ? "/profile" : "/sign-in"} data-testid="link-account" className="hidden items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-muted-foreground hover:bg-secondary hover:text-foreground sm:flex"><UserRound size={17} /> {isSignedIn ? 'حسابي' : 'تسجيل الدخول'}</Link>
             <button type="button" data-testid="button-mobile-menu" aria-label="فتح القائمة" className="button-ghost p-2 lg:hidden" onClick={() => setOpen(!open)}>{open ? <X size={18} /> : <Menu size={18} />}</button>
           </div>
         </div>
@@ -231,8 +288,140 @@ function DashboardPage() {
   return <div className="mx-auto max-w-[1440px] px-5 py-12 lg:px-10"><div className="mb-10 flex items-end justify-between"><div><p className="mb-2 text-xs font-bold tracking-[.12em] text-accent">مساحتك في بوابة</p><h1 className="display-font text-4xl font-extrabold text-primary">أهلًا بك من جديد</h1><p className="mt-2 text-sm text-muted-foreground">نظرة هادئة على كل ما يتحرك حول بيتك.</p></div><div className="flex gap-2"><button type="button" onClick={() => setPropertyForm(true)} data-testid="button-add-property" className="button-accent"><Plus size={16} /> إضافة عقار</button><button type="button" data-testid="button-dashboard-settings" className="button-ghost p-2 sm:px-3"><Settings2 size={16} /><span className="hidden sm:inline">الإعدادات</span></button></div></div><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{stats.map(({ label, value, icon: Icon }, i) => <div key={label} data-testid={`stat-${i}`} className={`rounded-2xl border border-border p-5 ${i === 0 ? 'bg-primary text-primary-foreground' : 'bg-card'}`}><div className="flex items-center justify-between"><span className={`flex h-10 w-10 items-center justify-center rounded-xl ${i === 0 ? 'bg-primary-foreground/10 text-accent' : 'bg-secondary text-primary'}`}><Icon size={19} /></span><ArrowUpRight size={16} className={i === 0 ? 'text-accent' : 'text-muted-foreground'} /></div><p className={`mt-7 text-3xl font-extrabold ${i === 0 ? '' : 'text-primary'}`}>{number(value)}</p><p className={`mt-1 text-xs ${i === 0 ? 'text-primary-foreground/65' : 'text-muted-foreground'}`}>{label}</p></div>)}</div><div className="mt-8 grid gap-5 lg:grid-cols-[1.3fr_.7fr]"><div className="rounded-2xl border border-border bg-card p-6"><div className="flex items-center justify-between"><h2 className="font-bold text-primary">نبض المنصة</h2><span className="flex items-center gap-1 text-xs text-emerald-700"><span className="h-2 w-2 rounded-full bg-emerald-500" /> محدث الآن</span></div><div className="mt-7 grid gap-4 sm:grid-cols-2"><div className="rounded-xl bg-secondary p-4"><p className="text-xs text-muted-foreground">عقارات قيد المراجعة</p><p className="mt-2 text-2xl font-extrabold text-primary">{number(s.pendingProperties)}</p><div className="mt-3 h-1.5 rounded-full bg-border"><div className="h-full w-2/3 rounded-full bg-accent" /></div></div><div className="rounded-xl bg-secondary p-4"><p className="text-xs text-muted-foreground">طلبات التشطيب</p><p className="mt-2 text-2xl font-extrabold text-primary">{number(s.finishingRequests)}</p><div className="mt-3 h-1.5 rounded-full bg-border"><div className="h-full w-1/2 rounded-full bg-primary" /></div></div></div></div><div className="rounded-2xl bg-accent p-6 text-accent-foreground"><Sparkles size={24} /><h2 className="mt-7 text-xl font-extrabold">ماذا بعد؟</h2><p className="mt-2 text-sm leading-7 text-accent-foreground/75">اكتشف خبيرًا يساعدك تنقل فكرتك من الورق إلى بيت حقيقي.</p><Link href="/professionals" data-testid="link-dashboard-professionals" className="mt-5 inline-flex items-center gap-2 text-sm font-bold underline underline-offset-4">تصفح الخبراء <ArrowLeft size={15} /></Link></div></div><div className="mt-5 flex flex-wrap gap-3 text-xs text-muted-foreground"><span className="rounded-full border border-border bg-card px-3 py-2">الخبراء: {number(s.professionals)}</span><span className="rounded-full border border-border bg-card px-3 py-2">منتجات السوق: {number(s.products)}</span>{s.revenue !== undefined && <span className="rounded-full border border-border bg-card px-3 py-2">إجمالي الإيرادات: {money(s.revenue)}</span>}</div>{propertyForm && <PropertySubmitModal onClose={() => setPropertyForm(false)} />}</div>;
 }
 
-function Router() {
-  return <ErrorBoundary resetKey={useLocation()[0]}><Shell><Switch><Route path="/" component={Home} /><Route path="/properties" component={PropertiesPage} /><Route path="/properties/:id" component={PropertyDetail} /><Route path="/finishing" component={FinishingPage} /><Route path="/professionals" component={ProfessionalsPage} /><Route path="/marketplace" component={MarketplacePage} /><Route path="/dashboard" component={DashboardPage} /><Route component={() => <div className="mx-auto max-w-2xl px-5 py-28 text-center"><h1 className="display-font text-5xl font-extrabold text-primary">هذه الصفحة غير موجودة</h1><Link href="/" className="button-primary mt-7">العودة للرئيسية</Link></div>} /></Switch></Shell></ErrorBoundary>;
+function AuthPage({ mode }: { mode: 'sign-in' | 'sign-up' }) {
+  const { isSignedIn } = useAuth();
+  const [location, navigate] = useLocation();
+  useEffect(() => {
+    if (isSignedIn) navigate('/profile');
+  }, [isSignedIn, navigate]);
+  return <div dir="rtl" className="min-h-[100dvh] bg-background px-5 py-10 text-foreground makana-noise"><div className="mx-auto flex max-w-5xl flex-col items-center gap-8"><Link href="/" className="self-start"><BawabaLogo /></Link><div className="w-full max-w-[440px]"><p className="mb-5 text-center text-sm text-muted-foreground">{mode === 'sign-in' ? 'مرحبًا بك في بوابة' : 'ابدأ رحلتك مع بوابة'}</p>{mode === 'sign-in' ? <SignIn routing="path" path="/sign-in" signUpUrl={`${basePath}/sign-up`} fallbackRedirectUrl={`${basePath}/profile`} appearance={clerkAppearance} /> : <SignUp routing="path" path="/sign-up" signInUrl={`${basePath}/sign-in`} fallbackRedirectUrl={`${basePath}/profile`} appearance={clerkAppearance} />}</div><p className="text-xs text-muted-foreground">بوابة · بيتك يبدأ من هنا</p></div></div>;
 }
-function App() { return <QueryClientProvider client={queryClient}><TooltipProvider><WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}><Router /></WouterRouter><Toaster /></TooltipProvider></QueryClientProvider>; }
+
+type AdminProperty = {
+  id: number;
+  title: string;
+  district: string;
+  price: number;
+  status: string;
+  featured: boolean;
+  isDemo: boolean;
+};
+type AdminUser = {
+  id: number;
+  fullName: string;
+  email: string;
+  phone?: string | null;
+  role: string;
+  isDemo: boolean;
+};
+type AdminOverview = {
+  users: number;
+  properties: number;
+  pendingProperties: number;
+  viewingRequests: number;
+  appointments: number;
+  orders: number;
+  revenue: number;
+};
+
+async function adminApi<T>(path: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(`${basePath}/api${path}`, {
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json', ...(init?.headers || {}) },
+    ...init,
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({}));
+    throw new Error(body.error || 'تعذر تنفيذ الطلب');
+  }
+  return response.json();
+}
+
+function ProfilePage() {
+  const { isSignedIn, isLoaded } = useAuth();
+  const { user } = useUser();
+  const { signOut } = useClerk();
+  const [form, setForm] = useState({ fullName: '', phone: '' });
+  const [message, setMessage] = useState('');
+  useEffect(() => {
+    if (user) setForm({ fullName: user.fullName || '', phone: user.primaryPhoneNumber?.phoneNumber || '' });
+  }, [user]);
+  if (!isLoaded) return <Loading label="نجهز حسابك..." />;
+  if (!isSignedIn) return <div className="mx-auto max-w-xl px-5 py-24 text-center"><h1 className="text-2xl font-bold text-primary">سجّل دخولك لمتابعة حسابك</h1><Link href="/sign-in" className="button-primary mt-6">تسجيل الدخول</Link></div>;
+  if (!user) return <Loading label="نقرأ بيانات الحساب..." />;
+  const save = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setMessage('');
+    try {
+      await adminApi('/profile', { method: 'PATCH', body: JSON.stringify(form) });
+      if (user && form.fullName !== user.fullName) await user.update({ firstName: form.fullName.split(' ')[0], lastName: form.fullName.split(' ').slice(1).join(' ') });
+      setMessage('تم حفظ بيانات الحساب.');
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'تعذر حفظ البيانات.');
+    }
+  };
+  return <div className="mx-auto max-w-3xl px-5 py-12 lg:px-10"><div className="mb-8"><p className="mb-2 text-xs font-bold tracking-[.12em] text-accent">حسابي</p><h1 className="display-font text-4xl font-extrabold text-primary">بياناتك في بوابة</h1><p className="mt-3 text-sm text-muted-foreground">عدّل معلوماتك الأساسية واحتفظ بها محدثة.</p></div><form onSubmit={save} className="rounded-3xl border border-border bg-card p-6 shadow-sm md:p-8"><div className="grid gap-5 md:grid-cols-2"><label><span className="field-label">الاسم بالكامل</span><input required value={form.fullName} onChange={(event) => setForm({ ...form, fullName: event.target.value })} className="field-input" /></label><label><span className="field-label">رقم الهاتف</span><input value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} className="field-input" /></label><label className="md:col-span-2"><span className="field-label">البريد الإلكتروني</span><input disabled value={user.primaryEmailAddress?.emailAddress || ''} className="field-input opacity-70" /></label></div><div className="mt-6 flex flex-wrap items-center gap-3"><button className="button-accent" type="submit">حفظ التغييرات</button><button className="button-ghost" type="button" onClick={() => signOut({ redirectUrl: `${basePath}/` })}>تسجيل الخروج</button>{message && <span className="text-sm text-emerald-700">{message}</span>}</div></form></div>;
+}
+
+function AdminPage() {
+  const { isLoaded, isSignedIn } = useAuth();
+  const [overview, setOverview] = useState<AdminOverview | null>(null);
+  const [properties, setProperties] = useState<AdminProperty[]>([]);
+  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [requests, setRequests] = useState<{ viewingRequests: unknown[]; appointments: unknown[] }>({ viewingRequests: [], appointments: [] });
+  const [catalog, setCatalog] = useState<{ services: unknown[]; professionals: unknown[]; products: unknown[] }>({ services: [], professionals: [], products: [] });
+  const [section, setSection] = useState('overview');
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const load = async () => {
+    setBusy(true);
+    try {
+      const [nextOverview, nextProperties, nextUsers, nextRequests, nextCatalog] = await Promise.all([
+        adminApi<AdminOverview>('/admin/overview'),
+        adminApi<AdminProperty[]>('/admin/properties'),
+        adminApi<AdminUser[]>('/admin/users'),
+        adminApi<{ viewingRequests: unknown[]; appointments: unknown[] }>('/admin/requests'),
+        adminApi<{ services: unknown[]; professionals: unknown[]; products: unknown[] }>('/admin/catalog'),
+      ]);
+      setOverview(nextOverview); setProperties(nextProperties); setUsers(nextUsers); setRequests(nextRequests); setCatalog(nextCatalog); setError('');
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : 'لا يمكن تحميل لوحة الإدارة.');
+    } finally {
+      setBusy(false);
+    }
+  };
+  useEffect(() => { if (isLoaded && isSignedIn) void load(); }, [isLoaded, isSignedIn]);
+  if (!isLoaded) return <Loading label="نراجع صلاحيات الدخول..." />;
+  if (!isSignedIn) return <div className="mx-auto max-w-xl px-5 py-24 text-center"><ShieldCheck className="mx-auto text-accent" size={38} /><h1 className="mt-5 text-2xl font-bold text-primary">لوحة الإدارة تتطلب تسجيل الدخول</h1><Link href="/sign-in?redirect_url=/admin" className="button-primary mt-6">تسجيل الدخول</Link></div>;
+  const sections = [{ id: 'overview', label: 'الملخص', icon: LayoutDashboard }, { id: 'properties', label: 'العقارات', icon: Building2 }, { id: 'users', label: 'المستخدمون', icon: UsersRound }, { id: 'requests', label: 'الطلبات والمواعيد', icon: CalendarDays }, { id: 'catalog', label: 'الخدمات والمنتجات', icon: Store }];
+  const updateProperty = async (id: number, body: Record<string, unknown>) => { await adminApi(`/admin/properties/${id}`, { method: 'PATCH', body: JSON.stringify(body) }); await load(); };
+  const deleteDemo = async (resource: string, id: number) => { if (!window.confirm('سيتم حذف السجل التجريبي يدويًا. هل تريد المتابعة؟')) return; await adminApi(`/admin/demo-data/${resource}/${id}`, { method: 'DELETE' }); await load(); };
+  const updateUser = async (id: number, body: Record<string, unknown>) => { await adminApi(`/admin/users/${id}`, { method: 'PATCH', body: JSON.stringify(body) }); await load(); };
+  return <div className="mx-auto max-w-[1440px] px-5 py-10 lg:px-10"><div className="mb-8 flex flex-col justify-between gap-5 md:flex-row md:items-end"><div><p className="mb-2 text-xs font-bold tracking-[.12em] text-accent">BAWABA CONTROL CENTER</p><h1 className="display-font text-4xl font-extrabold text-primary">لوحة إدارة بوابة</h1><p className="mt-2 text-sm text-muted-foreground">إدارة المحتوى، المستخدمين، الطلبات والبيانات التجريبية من مكان واحد.</p></div><div className="flex items-center gap-3"><span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700">اتصال قاعدة البيانات نشط</span><button onClick={() => void load()} className="button-ghost" disabled={busy}>{busy ? 'جارٍ التحديث...' : 'تحديث البيانات'}</button></div></div><div className="grid gap-3 overflow-x-auto rounded-2xl border border-border bg-card p-2 sm:grid-cols-5">{sections.map(({ id, label, icon: Icon }) => <button key={id} onClick={() => setSection(id)} className={`flex min-w-[150px] items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-bold transition-colors ${section === id ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-secondary'}`}><Icon size={16} />{label}</button>)}</div>{error && <div className="mt-5 rounded-2xl border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">{error}</div>}{section === 'overview' && overview && <div className="mt-6"><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{[{ label: 'المستخدمون', value: overview.users, icon: UsersRound }, { label: 'العقارات', value: overview.properties, icon: Building2 }, { label: 'قيد المراجعة', value: overview.pendingProperties, icon: Clock3 }, { label: 'الإيرادات', value: money(overview.revenue), icon: CircleDollarSign }].map(({ label, value, icon: Icon }) => <div key={label} className="rounded-2xl border border-border bg-card p-5"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary text-primary"><Icon size={19} /></span><p className="mt-6 text-2xl font-extrabold text-primary">{typeof value === 'number' ? number(value) : value}</p><p className="mt-1 text-xs text-muted-foreground">{label}</p></div>)}</div><div className="mt-5 grid gap-4 md:grid-cols-3"><div className="rounded-2xl bg-primary p-5 text-primary-foreground"><p className="text-xs text-primary-foreground/60">طلبات المعاينة</p><p className="mt-3 text-3xl font-extrabold">{number(overview.viewingRequests)}</p></div><div className="rounded-2xl bg-accent p-5 text-accent-foreground"><p className="text-xs text-accent-foreground/65">المواعيد</p><p className="mt-3 text-3xl font-extrabold">{number(overview.appointments)}</p></div><div className="rounded-2xl border border-border bg-card p-5"><p className="text-xs text-muted-foreground">طلبات السوق</p><p className="mt-3 text-3xl font-extrabold text-primary">{number(overview.orders)}</p></div></div></div>}{section === 'properties' && <AdminProperties properties={properties} onUpdate={updateProperty} onDelete={(id) => void deleteDemo('properties', id)} />}{section === 'users' && <AdminUsers users={users} onUpdate={updateUser} />}{section === 'requests' && <AdminRequests requests={requests} />}{section === 'catalog' && <AdminCatalog catalog={catalog} onDelete={deleteDemo} />}</div>;
+}
+
+function AdminProperties({ properties, onUpdate, onDelete }: { properties: AdminProperty[]; onUpdate: (id: number, body: Record<string, unknown>) => Promise<void>; onDelete: (id: number) => void }) {
+  return <div className="mt-6 overflow-hidden rounded-2xl border border-border bg-card"><div className="flex items-center justify-between border-b border-border p-5"><div><h2 className="font-bold text-primary">مراجعة العقارات</h2><p className="mt-1 text-xs text-muted-foreground">تعديل الحالة والظهور أو حذف السجلات التجريبية يدويًا.</p></div><span className="rounded-full bg-secondary px-3 py-1 text-xs font-bold">{number(properties.length)} سجل</span></div><div className="overflow-x-auto"><table className="w-full min-w-[800px] text-right text-sm"><thead className="bg-secondary/70 text-xs text-muted-foreground"><tr><th className="p-4">العقار</th><th className="p-4">الموقع</th><th className="p-4">السعر</th><th className="p-4">الحالة</th><th className="p-4">إجراء</th></tr></thead><tbody>{properties.map((property) => <tr key={property.id} className="border-t border-border"><td className="p-4"><b className="text-primary">{property.title}</b>{property.isDemo && <span className="mr-2 rounded-full bg-accent/20 px-2 py-1 text-[10px] font-bold text-primary">تجريبي</span>}</td><td className="p-4 text-muted-foreground">{property.district}</td><td className="p-4 font-bold text-primary">{money(property.price)}</td><td className="p-4"><select value={property.status} onChange={(event) => void onUpdate(property.id, { status: event.target.value })} className="field-input max-w-[160px] py-2 text-xs"><option>Published</option><option>Pending Review</option><option>Draft</option><option>Rejected</option></select></td><td className="p-4"><button onClick={() => property.isDemo ? onDelete(property.id) : void onUpdate(property.id, { featured: !property.featured })} className="button-ghost px-3 py-2 text-xs">{property.isDemo ? 'حذف تجريبي' : property.featured ? 'إلغاء التمييز' : 'تمييز'}</button></td></tr>)}</tbody></table></div></div>;
+}
+
+function AdminUsers({ users, onUpdate }: { users: AdminUser[]; onUpdate: (id: number, body: Record<string, unknown>) => Promise<void> }) {
+  return <div className="mt-6 overflow-hidden rounded-2xl border border-border bg-card"><div className="border-b border-border p-5"><h2 className="font-bold text-primary">المستخدمون والصلاحيات</h2><p className="mt-1 text-xs text-muted-foreground">تعديل بيانات الحسابات وتحديد دور كل مستخدم.</p></div><div className="overflow-x-auto"><table className="w-full min-w-[780px] text-right text-sm"><thead className="bg-secondary/70 text-xs text-muted-foreground"><tr><th className="p-4">المستخدم</th><th className="p-4">الهاتف</th><th className="p-4">الدور</th><th className="p-4">المصدر</th></tr></thead><tbody>{users.map((user) => <tr key={user.id} className="border-t border-border"><td className="p-4"><b className="text-primary">{user.fullName}</b><p className="mt-1 text-xs text-muted-foreground">{user.email}</p></td><td className="p-4 text-muted-foreground">{user.phone || '—'}</td><td className="p-4"><select value={user.role} onChange={(event) => void onUpdate(user.id, { role: event.target.value })} className="field-input max-w-[140px] py-2 text-xs"><option value="customer">عميل</option><option value="staff">موظف</option><option value="admin">مدير</option></select></td><td className="p-4">{user.isDemo ? <span className="rounded-full bg-accent/20 px-2 py-1 text-[10px] font-bold text-primary">تجريبي</span> : <span className="text-xs text-muted-foreground">حساب حقيقي</span>}</td></tr>)}</tbody></table></div></div>;
+}
+
+function AdminRequests({ requests }: { requests: { viewingRequests: unknown[]; appointments: unknown[] } }) {
+  return <div className="mt-6 grid gap-5 md:grid-cols-2"><div className="rounded-2xl border border-border bg-card p-6"><CalendarDays className="text-accent" size={22} /><h2 className="mt-5 text-xl font-bold text-primary">طلبات المعاينة</h2><p className="mt-2 text-4xl font-extrabold text-primary">{number(requests.viewingRequests.length)}</p><p className="mt-2 text-sm text-muted-foreground">طلبات محفوظة في قاعدة البيانات ويمكن ربطها لاحقًا بتدفق الحالة والتواصل.</p></div><div className="rounded-2xl border border-border bg-card p-6"><Clock3 className="text-primary" size={22} /><h2 className="mt-5 text-xl font-bold text-primary">مواعيد الخبراء</h2><p className="mt-2 text-4xl font-extrabold text-primary">{number(requests.appointments.length)}</p><p className="mt-2 text-sm text-muted-foreground">جميع مواعيد دليل المهنيين في مكان واحد.</p></div></div>;
+}
+
+function AdminCatalog({ catalog, onDelete }: { catalog: { services: unknown[]; professionals: unknown[]; products: unknown[] }; onDelete: (resource: string, id: number) => Promise<void> | void }) {
+  const groups = [{ label: 'خدمات التشطيب', resource: 'services', items: catalog.services }, { label: 'المهنيون', resource: 'professionals', items: catalog.professionals }, { label: 'منتجات السوق', resource: 'products', items: catalog.products }];
+  return <div className="mt-6 grid gap-5 md:grid-cols-3">{groups.map((group) => <div key={group.resource} className="rounded-2xl border border-border bg-card p-5"><div className="flex items-center justify-between"><h2 className="font-bold text-primary">{group.label}</h2><span className="rounded-full bg-secondary px-2 py-1 text-xs">{number(group.items.length)}</span></div><p className="mt-3 text-sm leading-7 text-muted-foreground">السجلات التجريبية محفوظة ولا تُحذف تلقائيًا.</p><button disabled className="button-ghost mt-5 w-full text-xs">إدارة تفصيلية قريبًا</button></div>)}</div>;
+}
+
+function Router() {
+  const [location] = useLocation();
+  if (location.startsWith('/sign-in')) return <ErrorBoundary resetKey={location}><AuthPage mode="sign-in" /></ErrorBoundary>;
+  if (location.startsWith('/sign-up')) return <ErrorBoundary resetKey={location}><AuthPage mode="sign-up" /></ErrorBoundary>;
+  return <ErrorBoundary resetKey={location}><Shell><Switch><Route path="/" component={Home} /><Route path="/properties" component={PropertiesPage} /><Route path="/properties/:id" component={PropertyDetail} /><Route path="/finishing" component={FinishingPage} /><Route path="/professionals" component={ProfessionalsPage} /><Route path="/marketplace" component={MarketplacePage} /><Route path="/dashboard" component={DashboardPage} /><Route path="/profile" component={ProfilePage} /><Route path="/admin" component={AdminPage} /><Route component={() => <div className="mx-auto max-w-2xl px-5 py-28 text-center"><h1 className="display-font text-5xl font-extrabold text-primary">هذه الصفحة غير موجودة</h1><Link href="/" className="button-primary mt-7">العودة للرئيسية</Link></div>} /></Switch></Shell></ErrorBoundary>;
+}
+function App() { return <ClerkProvider publishableKey={clerkPubKey} proxyUrl={clerkProxyUrl} appearance={clerkAppearance}><QueryClientProvider client={queryClient}><TooltipProvider><WouterRouter base={basePath}><Router /></WouterRouter><Toaster /></TooltipProvider></QueryClientProvider></ClerkProvider>; }
 export default App;
